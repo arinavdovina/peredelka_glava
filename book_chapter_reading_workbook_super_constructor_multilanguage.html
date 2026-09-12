@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Book Chapter Reading Workbook — Super Prompt Constructor</title>
+<style>
+  :root{
+    --bg:#f6f3ee;
+    --paper:#fffdf9;
+    --ink:#1d2430;
+    --muted:#697386;
+    --line:#ddd6ca;
+    --accent:#2f5d50;
+    --accent-2:#a56a43;
+    --soft:#eef4f1;
+    --soft2:#f7eee7;
+    --danger:#9c3c3c;
+    --shadow:0 12px 35px rgba(29,36,48,.08);
+    --radius:18px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:linear-gradient(180deg,#f5f1eb 0%,#fbfaf7 100%);
+    color:var(--ink);
+    font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .shell{max-width:1500px;margin:0 auto;padding:28px}
+  .hero{
+    background:linear-gradient(135deg,#1e3d35,#2f5d50 56%,#7e9c8f);
+    color:#fff;
+    border-radius:28px;
+    padding:34px;
+    box-shadow:var(--shadow);
+    margin-bottom:22px;
+  }
+  .hero h1{font-size:clamp(30px,4vw,54px);line-height:1.02;margin:0 0 12px;letter-spacing:-.04em}
+  .hero p{max-width:980px;margin:0;color:rgba(255,255,255,.86);font-size:17px;line-height:1.55}
+  .hero .badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+  .badge{padding:7px 10px;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:rgba(255,255,255,.08);font-size:12px}
+
+  .layout{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(420px,.95fr);gap:22px;align-items:start}
+  @media(max-width:1100px){.layout{grid-template-columns:1fr}}
+  .panel{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+  .panel-head{
+    padding:20px 22px 16px;
+    border-bottom:1px solid var(--line);
+    display:flex;justify-content:space-between;gap:12px;align-items:center
+  }
+  .panel-head h2{margin:0;font-size:20px}
+  .panel-body{padding:22px}
+  .section{
+    border:1px solid var(--line);
+    border-radius:16px;
+    margin-bottom:14px;
+    overflow:hidden;
+    background:#fff;
+  }
+  .section:last-child{margin-bottom:0}
+  .section > button{
+    width:100%;border:0;background:#fff;padding:16px 18px;text-align:left;
+    display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:15px;color:var(--ink);cursor:pointer
+  }
+  .section > button:hover{background:#faf7f2}
+  .section .content{padding:0 18px 18px;display:none}
+  .section.open .content{display:block}
+  .section .chev{font-size:18px;color:var(--muted);transition:.2s}
+  .section.open .chev{transform:rotate(180deg)}
+  .hint{font-size:12px;color:var(--muted);line-height:1.45;margin:4px 0 12px}
+
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  @media(max-width:760px){.grid,.grid3{grid-template-columns:1fr}}
+  label.field{display:block;font-size:12px;font-weight:800;color:#394455}
+  input[type=text],input[type=number],select,textarea{
+    width:100%;margin-top:7px;padding:11px 12px;border:1px solid #d8d1c7;border-radius:12px;background:#fff;color:var(--ink);
+    font:inherit;outline:none
+  }
+  textarea{min-height:90px;resize:vertical}
+  input:focus,select:focus,textarea:focus{border-color:#6f968a;box-shadow:0 0 0 3px rgba(47,93,80,.08)}
+
+  .check-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px}
+  @media(max-width:760px){.check-grid{grid-template-columns:1fr}}
+  .check{
+    display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border:1px solid #ebe5dc;border-radius:12px;background:#fff;
+  }
+  .check:hover{background:#fbfaf7}
+  .check input{margin-top:2px;accent-color:var(--accent)}
+  .check span{font-size:13px;line-height:1.35}
+  .subhead{font-size:13px;font-weight:900;margin:16px 0 8px;color:var(--accent)}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+  button.action{
+    border:0;border-radius:12px;padding:10px 14px;font-weight:800;cursor:pointer;font:inherit
+  }
+  .primary{background:var(--accent);color:white}
+  .secondary{background:#f0ece6;color:var(--ink)}
+  .warm{background:var(--soft2);color:#6b4129}
+  .danger{background:#f7e7e7;color:var(--danger)}
+  .action:hover{filter:brightness(.98)}
+
+  .sticky{position:sticky;top:16px}
+  .output{
+    min-height:670px;white-space:pre-wrap;background:#111827;color:#e5e7eb;border-radius:16px;padding:18px;overflow:auto;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12.4px;line-height:1.55
+  }
+  .status{
+    display:flex;justify-content:space-between;gap:12px;align-items:center;margin:12px 0 0;font-size:12px;color:var(--muted)
+  }
+  .counter{font-variant-numeric:tabular-nums}
+  .mini{padding:8px 10px;font-size:12px}
+  .preset-wrap{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .preset{border:1px solid #d9d1c5;background:#fff;border-radius:999px;padding:8px 10px;font-size:12px;font-weight:800;cursor:pointer}
+  .preset:hover{background:#f8f4ee}
+  .pillnote{
+    background:var(--soft);border:1px solid #d9e5e0;color:#38564d;border-radius:14px;padding:12px 14px;font-size:12px;line-height:1.5;margin-bottom:12px
+  }
+  .range-row{display:grid;grid-template-columns:1fr 92px;gap:10px;align-items:center}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .switchrow{display:flex;gap:12px;flex-wrap:wrap}
+  .switch{
+    display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid #e3ddd4;border-radius:999px;background:#fff;font-size:12px;font-weight:700
+  }
+  .switch input{accent-color:var(--accent)}
+  footer{padding:22px 4px 6px;color:var(--muted);font-size:12px;text-align:center}
+</style>
+</head>
+<body>
+<div class="shell">
+  <section class="hero">
+    <h1>Book Chapter Reading Workbook</h1>
+    <p>Максимально расширенный универсальный конструктор промтов для создания рабочих тетрадей по главам художественных и адаптированных книг на любом изучаемом языке. Прикрепляйте фото/скриншоты главы в нейросеть, задавайте язык, уровень, методику и формат — и вставляйте собранный промпт без ручной доработки.</p>
+    <div class="badges">
+      <span class="badge">Before / During / After Reading</span>
+      <span class="badge">Any target language</span><span class="badge">CEFR-aware</span>
+      <span class="badge">Anti-guessing</span>
+      <span class="badge">Vocabulary Retrieval</span>
+      <span class="badge">Inference & Evidence</span>
+      <span class="badge">Speaking / Writing / Creative</span>
+      <span class="badge">Teacher Key</span>
+    </div>
+  </section>
+
+  <div class="layout">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Настройки конструктора</h2>
+        <div class="toolbar">
+          <button class="action secondary mini" onclick="openAll()">Открыть всё</button>
+          <button class="action secondary mini" onclick="closeAll()">Свернуть всё</button>
+          <button class="action danger mini" onclick="resetAll()">Сбросить</button>
+        </div>
+      </div>
+      <div class="panel-body">
+
+        <div class="pillnote">
+          Быстрый старт: выберите пресет, затем при желании точечно добавьте или уберите задания. Все настройки автоматически сохраняются в браузере.
+          <div class="preset-wrap">
+            <button class="preset" onclick="applyPreset('balanced')">Сбалансированная глава</button>
+            <button class="preset" onclick="applyPreset('young')">Young Learners</button>
+            <button class="preset" onclick="applyPreset('vocab')">Vocabulary Intensive</button>
+            <button class="preset" onclick="applyPreset('literature')">Literature & Inference</button>
+            <button class="preset" onclick="applyPreset('speaking')">Speaking Focus</button>
+          </div>
+        </div>
+
+        <div class="section open">
+          <button type="button" onclick="toggleSection(this)"><span>1. Контекст обучения</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="grid3">
+              <label class="field">Изучаемый язык
+                <select id="targetLanguage">
+                  <option selected>English</option>
+                  <option>German</option>
+                  <option>French</option>
+                  <option>Spanish</option>
+                  <option>Italian</option>
+                  <option>Portuguese</option>
+                  <option>Russian as a foreign language</option>
+                  <option>Chinese</option>
+                  <option>Japanese</option>
+                  <option>Korean</option>
+                  <option>Arabic</option>
+                  <option>Turkish</option>
+                  <option>Polish</option>
+                  <option>Czech</option>
+                  <option>Greek</option>
+                  <option>Dutch</option>
+                  <option>Swedish</option>
+                  <option>Norwegian</option>
+                  <option>Finnish</option>
+                  <option>other — use custom field below</option>
+                </select>
+              </label>
+              <label class="field">Другой изучаемый язык
+                <input id="customTargetLanguage" type="text" placeholder="например: Serbian, Hebrew, Latin">
+              </label>
+              <label class="field">Возраст ученика
+                <input id="age" type="text" placeholder="например: 10–11 лет">
+              </label>
+              <label class="field">Уровень
+                <select id="cefr">
+                  <option>Pre-A1</option><option>A1</option><option selected>A2</option><option>B1</option><option>B2</option><option>C1</option><option>native / literature class</option><option>custom level</option>
+                </select>
+              </label>
+              <label class="field">Формат
+                <select id="classFormat">
+                  <option>1-to-1</option><option>pair work</option><option>small group</option><option>group class</option><option>self-study</option>
+                </select>
+              </label>
+              <label class="field">Возрастной тон
+                <select id="tone">
+                  <option>детский, но не инфантильный</option>
+                  <option>подростковый</option>
+                  <option>нейтральный</option>
+                  <option>взрослый</option>
+                  <option>академический</option>
+                </select>
+              </label>
+              <label class="field">Тип книги
+                <select id="bookType">
+                  <option>fiction / story</option><option>graded reader</option><option>classic literature</option><option>young adult fiction</option><option>children's literature</option><option>non-fiction narrative</option><option>detective / mystery</option><option>fantasy / adventure</option><option>other</option>
+                </select>
+              </label>
+              <label class="field">Название книги
+                <input id="bookTitle" type="text" placeholder="необязательно">
+              </label>
+              <label class="field">Глава
+                <input id="chapterTitle" type="text" placeholder="например: Chapter 4">
+              </label>
+              <label class="field">Длина главы
+                <select id="chapterLength">
+                  <option>short</option><option selected>medium</option><option>long</option><option>very long</option>
+                </select>
+              </label>
+              <label class="field">Формат чтения
+                <select id="readingMode">
+                  <option>silent reading</option><option>reading aloud</option><option>teacher + learner</option><option selected>mixed</option><option>home reading + lesson work</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section open">
+          <button type="button" onclick="toggleSection(this)"><span>2. Формат рабочей тетради</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="grid3">
+              <label class="field">Количество страниц
+                <input id="pages" type="number" min="1" max="40" value="10">
+              </label>
+              <label class="field">Заданий на страницу
+                <select id="tasksPerPage"><option>1</option><option selected>1–2</option><option>2</option><option>2–3</option><option>3</option></select>
+              </label>
+              <label class="field">Язык инструкций ученику
+                <select id="instructionLang">
+                  <option selected>same as target language</option>
+                  <option>Russian</option>
+                  <option>English</option>
+                  <option>bilingual: target language + Russian</option>
+                  <option>bilingual: target language + English</option>
+                  <option>custom — use field below</option>
+                </select>
+              </label>
+              <label class="field">Другой язык инструкций
+                <input id="customInstructionLanguage" type="text" placeholder="например: French">
+              </label>
+              <label class="field">Язык перевода / опоры
+                <select id="supportLanguage">
+                  <option selected>Russian</option>
+                  <option>English</option>
+                  <option>same as target language — no translation</option>
+                  <option>custom — use field below</option>
+                </select>
+              </label>
+              <label class="field">Другой язык перевода / опоры
+                <input id="customSupportLanguage" type="text" placeholder="например: German">
+              </label>
+              <label class="field">Язык методических комментариев
+                <select id="teacherLanguage">
+                  <option selected>Russian</option>
+                  <option>English</option>
+                  <option>same as target language</option>
+                  <option>custom — use field below</option>
+                </select>
+              </label>
+              <label class="field">Другой язык комментариев
+                <input id="customTeacherLanguage" type="text" placeholder="например: Spanish">
+              </label>
+              <label class="field">Перевод
+                <select id="translation">
+                  <option>no translation</option><option>minimal translation scaffolding</option><option selected>translation as gradual scaffolding</option><option>bilingual support</option>
+                </select>
+              </label>
+              <label class="field">Scaffolding
+                <select id="scaffolding"><option>high</option><option selected>medium</option><option>low</option><option>adaptive by task difficulty</option></select>
+              </label>
+              <label class="field">Сложность
+                <select id="difficulty"><option>comfortable</option><option selected>slightly challenging</option><option>challenging</option><option>mixed difficulty</option></select>
+              </label>
+              <label class="field">Оригинальный текст в тетради
+                <select id="includeText"><option>do not reproduce the full text</option><option>selected short extracts only</option><option>include original text only if user explicitly asks</option><option>include the text in reading chunks if copyright / source allows</option></select>
+              </label>
+              <label class="field">Ответы
+                <select id="answerKey"><option selected>teacher key separately</option><option>no answers</option><option>teacher key + brief rationale</option><option>teacher key + evidence references</option></select>
+              </label>
+              <label class="field">Тип результата
+                <select id="outputType"><option selected>complete learner-facing workbook</option><option>methodological plan only</option><option>workbook + teacher notes</option><option>workbook + design brief</option></select>
+              </label>
+            </div>
+            <div class="subhead">Дополнительные требования</div>
+            <div class="switchrow">
+              <label class="switch"><input id="readyToUse" type="checkbox" checked> Полностью готово к использованию</label>
+              <label class="switch"><input id="noPlaceholders" type="checkbox" checked> Без заглушек и «добавьте задание»</label>
+              <label class="switch"><input id="studentFacing" type="checkbox" checked> Ученические формулировки заданий</label>
+              <label class="switch"><input id="pagePurpose" type="checkbox" checked> У каждой страницы своя цель</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>3. Главный фокус</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="check-grid" id="focuses">
+              <label class="check"><input type="checkbox" value="general comprehension" checked><span>General comprehension</span></label>
+              <label class="check"><input type="checkbox" value="detailed reading" checked><span>Detailed reading</span></label>
+              <label class="check"><input type="checkbox" value="vocabulary development" checked><span>Vocabulary</span></label>
+              <label class="check"><input type="checkbox" value="reading strategies"><span>Reading strategies</span></label>
+              <label class="check"><input type="checkbox" value="inference and evidence" checked><span>Inference & evidence</span></label>
+              <label class="check"><input type="checkbox" value="speaking"><span>Speaking</span></label>
+              <label class="check"><input type="checkbox" value="writing"><span>Writing</span></label>
+              <label class="check"><input type="checkbox" value="grammar noticing"><span>Grammar noticing</span></label>
+              <label class="check"><input type="checkbox" value="literary analysis"><span>Literature / literary analysis</span></label>
+              <label class="check"><input type="checkbox" value="critical thinking"><span>Critical thinking</span></label>
+              <label class="check"><input type="checkbox" value="retelling"><span>Retelling</span></label>
+              <label class="check"><input type="checkbox" value="translation skills"><span>Translation skills</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>4. BEFORE READING</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="hint">Активация знаний, создание цели чтения, безопасное введение в тему без спойлеров.</div>
+            <div class="check-grid taskGroup" data-group="Before Reading">
+              <label class="check"><input type="checkbox" value="Predict from the chapter title"><span>Predict from the chapter title</span></label>
+              <label class="check"><input type="checkbox" value="Predict from illustrations / visual clues"><span>Predict from illustrations</span></label>
+              <label class="check"><input type="checkbox" value="Build a possible story from 3–5 clues"><span>Build a story from clues</span></label>
+              <label class="check"><input type="checkbox" value="Which words might appear in the chapter?"><span>Which words might appear?</span></label>
+              <label class="check"><input type="checkbox" value="Anticipation guide: agree / disagree"><span>Anticipation guide</span></label>
+              <label class="check"><input type="checkbox" value="Pre-reading true / false predictions"><span>True / false before reading</span></label>
+              <label class="check"><input type="checkbox" value="Activate prior knowledge"><span>What do you already know?</span></label>
+              <label class="check"><input type="checkbox" value="Predict the central problem"><span>Predict the central problem</span></label>
+              <label class="check"><input type="checkbox" value="Write 2–4 questions the chapter may answer"><span>Questions to be answered</span></label>
+              <label class="check"><input type="checkbox" value="Preview only essential vocabulary"><span>Essential vocabulary preview</span></label>
+              <label class="check"><input type="checkbox" value="Match key words to pictures or definitions"><span>Match words to visuals / definitions</span></label>
+              <label class="check"><input type="checkbox" value="Sort chapter words into semantic groups"><span>Sort words into categories</span></label>
+              <label class="check"><input type="checkbox" value="Odd one out with plausible options"><span>Odd one out</span></label>
+              <label class="check"><input type="checkbox" value="Predict character feelings / intentions"><span>Character prediction</span></label>
+              <label class="check"><input type="checkbox" value="Predict setting / atmosphere"><span>Setting prediction</span></label>
+              <label class="check"><input type="checkbox" value="Choose the most likely chapter route"><span>Choose possible chapter route</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>5. DURING READING — gist & structure</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="check-grid taskGroup" data-group="During Reading — Gist & Structure">
+              <label class="check"><input type="checkbox" value="Choose the best summary"><span>Choose the best summary</span></label>
+              <label class="check"><input type="checkbox" value="Choose the best title for a section"><span>Best title for section</span></label>
+              <label class="check"><input type="checkbox" value="Match episodes to headings"><span>Match episodes to headings</span></label>
+              <label class="check"><input type="checkbox" value="Identify the main event"><span>Main event</span></label>
+              <label class="check"><input type="checkbox" value="One-sentence checkpoint"><span>One-sentence checkpoint</span></label>
+              <label class="check"><input type="checkbox" value="Stop-and-predict at a natural cliffhanger"><span>Stop & predict</span></label>
+              <label class="check"><input type="checkbox" value="Check and revise earlier predictions"><span>Check predictions</span></label>
+              <label class="check"><input type="checkbox" value="Who / where / what quick orientation"><span>Who / where / what</span></label>
+              <label class="check"><input type="checkbox" value="Arrange episodes into a story route"><span>Story route</span></label>
+              <label class="check"><input type="checkbox" value="Identify natural reading stop points"><span>Natural reading stop points</span></label>
+              <label class="check"><input type="checkbox" value="Beginning–middle–end structure"><span>Beginning–middle–end</span></label>
+              <label class="check"><input type="checkbox" value="Somebody–wanted–but–so–then"><span>SWBST</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>6. DURING READING — detail & evidence</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="check-grid taskGroup" data-group="During Reading — Detail & Evidence">
+              <label class="check"><input type="checkbox" value="True / False / Not Stated"><span>True / False / Not Stated</span></label>
+              <label class="check"><input type="checkbox" value="Correct the false statement"><span>Correct the false statement</span></label>
+              <label class="check"><input type="checkbox" value="Multiple choice with plausible distractors"><span>Multiple choice</span></label>
+              <label class="check"><input type="checkbox" value="Short-answer questions"><span>Short answers</span></label>
+              <label class="check"><input type="checkbox" value="Who said it?"><span>Who said it?</span></label>
+              <label class="check"><input type="checkbox" value="Who did it?"><span>Who did it?</span></label>
+              <label class="check"><input type="checkbox" value="Match character and action"><span>Character + action</span></label>
+              <label class="check"><input type="checkbox" value="Match cause and result"><span>Cause + result</span></label>
+              <label class="check"><input type="checkbox" value="Match problem and reaction"><span>Problem + reaction</span></label>
+              <label class="check"><input type="checkbox" value="Complete a timeline"><span>Timeline</span></label>
+              <label class="check"><input type="checkbox" value="Complete a story map"><span>Story map</span></label>
+              <label class="check"><input type="checkbox" value="Order events"><span>Order events</span></label>
+              <label class="check"><input type="checkbox" value="Before / after"><span>Before / after</span></label>
+              <label class="check"><input type="checkbox" value="Find the mistake in a summary"><span>Find the mistake in a summary</span></label>
+              <label class="check"><input type="checkbox" value="Which statement is NOT correct?"><span>Which statement is NOT correct?</span></label>
+              <label class="check"><input type="checkbox" value="Two facts and one fake"><span>Two facts and one fake</span></label>
+              <label class="check"><input type="checkbox" value="Evidence hunt"><span>Evidence hunt</span></label>
+              <label class="check"><input type="checkbox" value="Character tracker"><span>Character tracker</span></label>
+              <label class="check"><input type="checkbox" value="Emotion tracker"><span>Emotion tracker</span></label>
+              <label class="check"><input type="checkbox" value="Object / clue tracker"><span>Object / clue tracker</span></label>
+              <label class="check"><input type="checkbox" value="Dialogue reconstruction"><span>Dialogue reconstruction</span></label>
+              <label class="check"><input type="checkbox" value="Complete missing information"><span>Complete missing information</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>7. INFERENCE — reading between the lines</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="check-grid taskGroup" data-group="Inference & Reading Between the Lines">
+              <label class="check"><input type="checkbox" value="How does the character probably feel? Give evidence."><span>Character feelings + evidence</span></label>
+              <label class="check"><input type="checkbox" value="Why did the character do this?"><span>Motivation</span></label>
+              <label class="check"><input type="checkbox" value="What can we infer?"><span>What can we infer?</span></label>
+              <label class="check"><input type="checkbox" value="Choose the best explanation and justify it"><span>Best explanation + justification</span></label>
+              <label class="check"><input type="checkbox" value="Which clue supports the idea?"><span>Which clue supports the idea?</span></label>
+              <label class="check"><input type="checkbox" value="Fact or inference?"><span>Fact or inference?</span></label>
+              <label class="check"><input type="checkbox" value="What is probably true?"><span>What is probably true?</span></label>
+              <label class="check"><input type="checkbox" value="Hidden motivation"><span>Hidden motivation</span></label>
+              <label class="check"><input type="checkbox" value="Relationship clues"><span>Relationship clues</span></label>
+              <label class="check"><input type="checkbox" value="Mood / atmosphere from textual clues"><span>Mood / atmosphere</span></label>
+              <label class="check"><input type="checkbox" value="Predict consequences from evidence"><span>Predict consequences</span></label>
+              <label class="check"><input type="checkbox" value="Reliable or unreliable interpretation"><span>Reliability</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>8. VOCABULARY — discovery</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="check-grid taskGroup" data-group="Vocabulary — Discovery">
+              <label class="check"><input type="checkbox" value="Match word and meaning"><span>Word + meaning</span></label>
+              <label class="check"><input type="checkbox" value="Match word and translation"><span>Word + translation</span></label>
+              <label class="check"><input type="checkbox" value="Guess meaning from context"><span>Guess meaning from context</span></label>
+              <label class="check"><input type="checkbox" value="Choose the correct contextual meaning"><span>Contextual meaning</span></label>
+              <label class="check"><input type="checkbox" value="Find the word in context"><span>Find in context</span></label>
+              <label class="check"><input type="checkbox" value="Synonym / antonym"><span>Synonym / antonym</span></label>
+              <label class="check"><input type="checkbox" value="Word families"><span>Word families</span></label>
+              <label class="check"><input type="checkbox" value="Collocations"><span>Collocations</span></label>
+              <label class="check"><input type="checkbox" value="Verb + noun combinations"><span>Verb + noun</span></label>
+              <label class="check"><input type="checkbox" value="Adjective + noun combinations"><span>Adjective + noun</span></label>
+              <label class="check"><input type="checkbox" value="Phrasal verbs"><span>Phrasal verbs</span></label>
+              <label class="check"><input type="checkbox" value="Emotion vocabulary"><span>Emotion vocabulary</span></label>
+              <label class="check"><input type="checkbox" value="Setting vocabulary"><span>Setting vocabulary</span></label>
+              <label class="check"><input type="checkbox" value="Categorise words"><span>Categorise words</span></label>
+              <label class="check"><input type="checkbox" value="Vocabulary detective"><span>Vocabulary detective</span></label>
+              <label class="check"><input type="checkbox" value="Replace a basic word with a stronger chapter word"><span>Upgrade the word</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>9. VOCABULARY — retrieval & use</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="check-grid taskGroup" data-group="Vocabulary — Retrieval & Use">
+              <label class="check"><input type="checkbox" value="Cover and recall"><span>Cover & recall</span></label>
+              <label class="check"><input type="checkbox" value="Complete missing letters"><span>Missing letters</span></label>
+              <label class="check"><input type="checkbox" value="Complete from definition"><span>From definition</span></label>
+              <label class="check"><input type="checkbox" value="Complete from translation"><span>From translation</span></label>
+              <label class="check"><input type="checkbox" value="Complete from context"><span>From context</span></label>
+              <label class="check"><input type="checkbox" value="Recall without a word bank"><span>No word bank</span></label>
+              <label class="check"><input type="checkbox" value="Categorise from memory"><span>Categorise from memory</span></label>
+              <label class="check"><input type="checkbox" value="Which word is missing?"><span>Which word is missing?</span></label>
+              <label class="check"><input type="checkbox" value="Correct the vocabulary mistake"><span>Correct the vocab mistake</span></label>
+              <label class="check"><input type="checkbox" value="Produce a phrase with the word"><span>Produce a phrase</span></label>
+              <label class="check"><input type="checkbox" value="Complete a new sentence"><span>Use in a new sentence</span></label>
+              <label class="check"><input type="checkbox" value="Personalise the vocabulary"><span>Personalise</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>10. GRAMMAR / LANGUAGE NOTICING</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="check-grid taskGroup" data-group="Grammar & Language Noticing">
+              <label class="check"><input type="checkbox" value="Find examples of a target structure"><span>Find examples</span></label>
+              <label class="check"><input type="checkbox" value="Sort language examples"><span>Sort examples</span></label>
+              <label class="check"><input type="checkbox" value="Notice the pattern"><span>Notice the pattern</span></label>
+              <label class="check"><input type="checkbox" value="Complete the rule from examples"><span>Complete the rule</span></label>
+              <label class="check"><input type="checkbox" value="Compare two structures"><span>Compare structures</span></label>
+              <label class="check"><input type="checkbox" value="Why is this form used here?"><span>Why this form?</span></label>
+              <label class="check"><input type="checkbox" value="Transform chapter sentences"><span>Transform sentences</span></label>
+              <label class="check"><input type="checkbox" value="Choose the correct form in a new context"><span>Transfer to a new context</span></label>
+              <label class="check"><input type="checkbox" value="Create one new example"><span>Create an example</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>11. STORY STRUCTURE & CHARACTER</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="subhead">Story structure</div>
+            <div class="check-grid taskGroup" data-group="Story Structure">
+              <label class="check"><input type="checkbox" value="Problem–action–result"><span>Problem–action–result</span></label>
+              <label class="check"><input type="checkbox" value="Story mountain"><span>Story mountain</span></label>
+              <label class="check"><input type="checkbox" value="Cause-and-effect chain"><span>Cause-and-effect chain</span></label>
+              <label class="check"><input type="checkbox" value="Character–goal–obstacle–decision"><span>Goal–obstacle–decision</span></label>
+              <label class="check"><input type="checkbox" value="Important vs less important events"><span>Important vs less important</span></label>
+              <label class="check"><input type="checkbox" value="Chapter in five moments"><span>Chapter in five moments</span></label>
+              <label class="check"><input type="checkbox" value="Missing scene"><span>Missing scene</span></label>
+              <label class="check"><input type="checkbox" value="Story puzzle"><span>Story puzzle</span></label>
+            </div>
+            <div class="subhead">Character work</div>
+            <div class="check-grid taskGroup" data-group="Character Work">
+              <label class="check"><input type="checkbox" value="Character profile"><span>Character profile</span></label>
+              <label class="check"><input type="checkbox" value="Character traits + evidence"><span>Traits + evidence</span></label>
+              <label class="check"><input type="checkbox" value="What the character says / does / thinks"><span>Says / does / thinks</span></label>
+              <label class="check"><input type="checkbox" value="Character decision analysis"><span>Decision analysis</span></label>
+              <label class="check"><input type="checkbox" value="Character feelings timeline"><span>Feelings timeline</span></label>
+              <label class="check"><input type="checkbox" value="Compare two characters"><span>Compare characters</span></label>
+              <label class="check"><input type="checkbox" value="What changed in the character?"><span>Character change</span></label>
+              <label class="check"><input type="checkbox" value="Advice for the character"><span>Advice</span></label>
+              <label class="check"><input type="checkbox" value="Defend or criticise a decision using evidence"><span>Defend / criticise</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>12. POST-READING</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="check-grid taskGroup" data-group="Post-reading Comprehension & Response">
+              <label class="check"><input type="checkbox" value="Retell using prompts"><span>Retell with prompts</span></label>
+              <label class="check"><input type="checkbox" value="Retell using keywords"><span>Retell with keywords</span></label>
+              <label class="check"><input type="checkbox" value="Retell using a timeline"><span>Retell with timeline</span></label>
+              <label class="check"><input type="checkbox" value="Complete the chapter summary"><span>Complete summary</span></label>
+              <label class="check"><input type="checkbox" value="Correct an inaccurate summary"><span>Correct inaccurate summary</span></label>
+              <label class="check"><input type="checkbox" value="Write a 20 / 40 / 60-word summary"><span>20 / 40 / 60-word summary</span></label>
+              <label class="check"><input type="checkbox" value="Choose five essential events"><span>Five essential events</span></label>
+              <label class="check"><input type="checkbox" value="Chapter in five sentences"><span>Five sentences</span></label>
+              <label class="check"><input type="checkbox" value="Chapter in three sentences"><span>Three sentences</span></label>
+              <label class="check"><input type="checkbox" value="One sentence only"><span>One sentence only</span></label>
+              <label class="check"><input type="checkbox" value="What changed from beginning to end?"><span>What changed?</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>13. SPEAKING</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="check-grid taskGroup" data-group="Speaking">
+              <label class="check"><input type="checkbox" value="Answer and explain"><span>Answer & explain</span></label>
+              <label class="check"><input type="checkbox" value="Would you rather...?"><span>Would you rather...?</span></label>
+              <label class="check"><input type="checkbox" value="What would you do?"><span>What would you do?</span></label>
+              <label class="check"><input type="checkbox" value="Character interview"><span>Character interview</span></label>
+              <label class="check"><input type="checkbox" value="Hot seat"><span>Hot seat</span></label>
+              <label class="check"><input type="checkbox" value="Role-play a scene"><span>Role-play</span></label>
+              <label class="check"><input type="checkbox" value="Retell from another character's perspective"><span>New perspective</span></label>
+              <label class="check"><input type="checkbox" value="Agree / disagree"><span>Agree / disagree</span></label>
+              <label class="check"><input type="checkbox" value="Rank decisions"><span>Rank decisions</span></label>
+              <label class="check"><input type="checkbox" value="Give advice"><span>Give advice</span></label>
+              <label class="check"><input type="checkbox" value="Defend a character"><span>Defend a character</span></label>
+              <label class="check"><input type="checkbox" value="Predict and justify"><span>Predict + justify</span></label>
+              <label class="check"><input type="checkbox" value="Compare with learner experience"><span>Personal response</span></label>
+              <label class="check"><input type="checkbox" value="Debate a character's decision"><span>Mini-debate</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>14. WRITING</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="check-grid taskGroup" data-group="Writing">
+              <label class="check"><input type="checkbox" value="Complete sentences"><span>Complete sentences</span></label>
+              <label class="check"><input type="checkbox" value="Guided paragraph"><span>Guided paragraph</span></label>
+              <label class="check"><input type="checkbox" value="Diary entry"><span>Diary entry</span></label>
+              <label class="check"><input type="checkbox" value="Message from one character to another"><span>Character message</span></label>
+              <label class="check"><input type="checkbox" value="Character profile"><span>Character profile</span></label>
+              <label class="check"><input type="checkbox" value="Alternative ending"><span>Alternative ending</span></label>
+              <label class="check"><input type="checkbox" value="Missing dialogue"><span>Missing dialogue</span></label>
+              <label class="check"><input type="checkbox" value="News report"><span>News report</span></label>
+              <label class="check"><input type="checkbox" value="Social media post"><span>Social post</span></label>
+              <label class="check"><input type="checkbox" value="Letter / note"><span>Letter / note</span></label>
+              <label class="check"><input type="checkbox" value="Chapter review"><span>Chapter review</span></label>
+              <label class="check"><input type="checkbox" value="Prediction for the next chapter"><span>Next chapter prediction</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>15. CREATIVE RESPONSE</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="check-grid taskGroup" data-group="Creative Response">
+              <label class="check"><input type="checkbox" value="Design a missing illustration"><span>Missing illustration</span></label>
+              <label class="check"><input type="checkbox" value="Draw the most important moment"><span>Important moment</span></label>
+              <label class="check"><input type="checkbox" value="Create a comic strip"><span>Comic strip</span></label>
+              <label class="check"><input type="checkbox" value="Make a character card"><span>Character card</span></label>
+              <label class="check"><input type="checkbox" value="Create a chapter poster"><span>Chapter poster</span></label>
+              <label class="check"><input type="checkbox" value="Design an object from the story"><span>Design an object</span></label>
+              <label class="check"><input type="checkbox" value="Create a new scene"><span>New scene</span></label>
+              <label class="check"><input type="checkbox" value="Rewrite one event"><span>Rewrite an event</span></label>
+              <label class="check"><input type="checkbox" value="Create a movie poster"><span>Movie poster</span></label>
+              <label class="check"><input type="checkbox" value="Create a chapter soundtrack"><span>Soundtrack</span></label>
+              <label class="check"><input type="checkbox" value="Design the next chapter cover"><span>Next chapter cover</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>16. CRITICAL THINKING</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="check-grid taskGroup" data-group="Critical Thinking">
+              <label class="check"><input type="checkbox" value="Was the character right?"><span>Was the character right?</span></label>
+              <label class="check"><input type="checkbox" value="Best / worst decision"><span>Best / worst decision</span></label>
+              <label class="check"><input type="checkbox" value="Rank characters' choices"><span>Rank choices</span></label>
+              <label class="check"><input type="checkbox" value="Find evidence for two interpretations"><span>Two interpretations</span></label>
+              <label class="check"><input type="checkbox" value="What information is missing?"><span>Missing information</span></label>
+              <label class="check"><input type="checkbox" value="Cause or coincidence?"><span>Cause or coincidence?</span></label>
+              <label class="check"><input type="checkbox" value="Which event mattered most?"><span>Most important event</span></label>
+              <label class="check"><input type="checkbox" value="Could the problem have been avoided?"><span>Could it be avoided?</span></label>
+              <label class="check"><input type="checkbox" value="What would change if...?"><span>What if...?</span></label>
+              <label class="check"><input type="checkbox" value="Choose the strongest argument"><span>Strongest argument</span></label>
+              <label class="check"><input type="checkbox" value="Fact / opinion / inference"><span>Fact / opinion / inference</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>17. NEXT-CHAPTER HOOK</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="check-grid taskGroup" data-group="Next-Chapter Hook">
+              <label class="check"><input type="checkbox" value="Predict what happens next"><span>Predict next events</span></label>
+              <label class="check"><input type="checkbox" value="Write three questions for the next chapter"><span>Three questions</span></label>
+              <label class="check"><input type="checkbox" value="Choose between three possible continuations"><span>Three possible continuations</span></label>
+              <label class="check"><input type="checkbox" value="Rank possible next events"><span>Rank next events</span></label>
+              <label class="check"><input type="checkbox" value="Mystery clues"><span>Mystery clues</span></label>
+              <label class="check"><input type="checkbox" value="What problem is still unresolved?"><span>Unresolved problem</span></label>
+              <label class="check"><input type="checkbox" value="Prediction + three pieces of evidence"><span>Prediction + evidence</span></label>
+              <label class="check"><input type="checkbox" value="Create a cliffhanger"><span>Create a cliffhanger</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>18. Методическая логика</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="grid">
+              <label class="field">Когнитивная прогрессия
+                <select id="cognitive">
+                  <option selected>Orientate → Predict → Gist → Detail → Notice → Infer → Retrieve → Respond → Transfer</option>
+                  <option>Recognition → Comprehension → Application → Analysis → Evaluation → Creation</option>
+                  <option>SEE → UNDERSTAND → CHOOSE → COMPLETE → USE → CREATE</option>
+                  <option>adaptive progression based on the chapter</option>
+                </select>
+              </label>
+              <label class="field">Работа с лексикой
+                <select id="vocabLogic">
+                  <option selected>Recognise → Match → Complete → Recall → Use</option>
+                  <option>Context → Meaning → Form → Retrieval → Transfer</option>
+                  <option>Lexical approach with chunks and collocations</option>
+                  <option>minimal vocabulary work</option>
+                </select>
+              </label>
+              <label class="field">Открытое письмо
+                <select id="writingSupport">
+                  <option selected>Model → Plan → Language Support → Write</option>
+                  <option>Sentence frames → guided paragraph → independent writing</option>
+                  <option>minimal writing</option>
+                </select>
+              </label>
+              <label class="field">Устная речь
+                <select id="speakingSupport">
+                  <option selected>support before spontaneous speaking</option>
+                  <option>sentence starters + useful language</option>
+                  <option>discussion-first</option>
+                  <option>minimal speaking</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>19. Anti-guessing & качество дистракторов</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="switchrow">
+              <label class="switch"><input id="randomAnswers" type="checkbox" checked> Случайные позиции правильных ответов</label>
+              <label class="switch"><input id="plausibleDistractors" type="checkbox" checked> Правдоподобные дистракторы</label>
+              <label class="switch"><input id="noPattern" type="checkbox" checked> Без шаблонов A-A-A-B</label>
+              <label class="switch"><input id="noLengthClues" type="checkbox" checked> Без подсказки длиной ответа</label>
+              <label class="switch"><input id="textDependent" type="checkbox" checked> Ответ требует чтения текста</label>
+              <label class="switch"><input id="evidenceFirst" type="checkbox" checked> Мнение после evidence</label>
+              <label class="switch"><input id="noGrammarMatching" type="checkbox" checked> Matching нельзя решить по форме</label>
+              <label class="switch"><input id="mixedTrueFalse" type="checkbox" checked> Непредсказуемый T/F паттерн</label>
+            </div>
+            <div class="subhead">Сложность дистракторов</div>
+            <div class="range-row">
+              <input id="distractorLevel" type="range" min="1" max="5" value="4" oninput="document.getElementById('distractorVal').value=this.value">
+              <input id="distractorVal" type="number" min="1" max="5" value="4">
+            </div>
+            <div class="hint">1 = очень прозрачные варианты; 5 = максимально правдоподобные, но честные варианты без ловушек.</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>20. Работа с изображениями главы</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="switchrow">
+              <label class="switch"><input id="imagePrimary" type="checkbox" checked> Фото/скриншоты = главный источник</label>
+              <label class="switch"><input id="noInvent" type="checkbox" checked> Не додумывать нечитабельный текст</label>
+              <label class="switch"><input id="visualEvidence" type="checkbox" checked> Использовать визуальные подсказки</label>
+              <label class="switch"><input id="crossPage" type="checkbox" checked> Сопоставлять информацию между страницами</label>
+              <label class="switch"><input id="ignoreMargins" type="checkbox" checked> Игнорировать номера/служебные элементы</label>
+            </div>
+            <label class="field" style="margin-top:12px">Если часть страницы плохо читается
+              <select id="unclearText">
+                <option selected>state that it is unclear and avoid inventing details</option>
+                <option>use only clearly visible information</option>
+                <option>ask for a clearer image only if the missing text is essential</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>21. Визуальный дизайн тетради</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="grid3">
+              <label class="field">Возрастной стиль
+                <select id="designAge"><option>children 7–9</option><option>children 9–11</option><option selected>pre-teen 10–13</option><option>teen 13–16</option><option>older teen</option><option>adult</option></select>
+              </label>
+              <label class="field">Дизайн
+                <select id="designStyle"><option selected>clean modern educational editorial</option><option>cinematic bookish</option><option>cozy literature journal</option><option>minimal Scandinavian</option><option>adventure / mystery</option><option>comic-inspired but clean</option><option>dark academia</option><option>premium teen workbook</option></select>
+              </label>
+              <label class="field">Плотность
+                <select id="density"><option>very airy</option><option selected>balanced</option><option>compact</option></select>
+              </label>
+              <label class="field">Формат
+                <select id="pageFormat"><option selected>A4 portrait</option><option>A4 landscape</option><option>US Letter portrait</option><option>digital vertical workbook</option></select>
+              </label>
+              <label class="field">Иллюстрации
+                <select id="illustrations"><option selected>use visual elements only when they support the task</option><option>frequent visual support</option><option>minimal illustrations</option><option>icons and diagrams only</option></select>
+              </label>
+              <label class="field">Цвет
+                <select id="colorMode"><option selected>limited cohesive palette</option><option>black and white printable</option><option>soft muted palette</option><option>bright but controlled</option><option>cinematic muted palette</option></select>
+              </label>
+            </div>
+            <div class="switchrow" style="margin-top:12px">
+              <label class="switch"><input id="clearHierarchy" type="checkbox" checked> Чёткая визуальная иерархия</label>
+              <label class="switch"><input id="printFriendly" type="checkbox" checked> Printable-friendly</label>
+              <label class="switch"><input id="noClutter" type="checkbox" checked> Без визуального шума</label>
+              <label class="switch"><input id="studentSpace" type="checkbox" checked> Достаточно места для ответов</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>22. Итоговая структура ответа нейросети</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <div class="check-grid" id="outputSections">
+              <label class="check"><input type="checkbox" value="Chapter Analysis" checked><span>Chapter Analysis</span></label>
+              <label class="check"><input type="checkbox" value="Natural Reading Stop Points" checked><span>Reading Stop Points</span></label>
+              <label class="check"><input type="checkbox" value="Methodological Map" checked><span>Methodological Map</span></label>
+              <label class="check"><input type="checkbox" value="Complete Student Workbook" checked><span>Complete Student Workbook</span></label>
+              <label class="check"><input type="checkbox" value="Teacher Key" checked><span>Teacher Key</span></label>
+              <label class="check"><input type="checkbox" value="Design Brief"><span>Design Brief</span></label>
+              <label class="check"><input type="checkbox" value="Differentiation Notes"><span>Differentiation Notes</span></label>
+              <label class="check"><input type="checkbox" value="Optional Homework"><span>Optional Homework</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <button type="button" onclick="toggleSection(this)"><span>23. Особые требования</span><span class="chev">⌄</span></button>
+          <div class="content">
+            <label class="field">Дополнительные требования к конкретной главе
+              <textarea id="special" placeholder="Например: детективная атмосфера; один персонаж заменяется енотом; больше лексики; без свободного письма; 2 задания на страницу; не использовать задания типа crossword и т.д."></textarea>
+            </label>
+            <label class="field" style="margin-top:12px">Что точно НЕ использовать
+              <textarea id="forbidden" placeholder="Например: кроссворды, длинные эссе, слишком детский дизайн, вопросы вне текста..."></textarea>
+            </label>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="panel sticky">
+      <div class="panel-head">
+        <h2>Готовый промпт</h2>
+        <div class="toolbar">
+          <button class="action secondary mini" onclick="generatePrompt()">Обновить</button>
+          <button class="action primary mini" onclick="copyPrompt()">Скопировать</button>
+          <button class="action warm mini" onclick="downloadPrompt()">Скачать .txt</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div id="output" class="output"></div>
+        <div class="status">
+          <span id="copyStatus">Промпт обновляется автоматически</span>
+          <span class="counter"><span id="charCount">0</span> символов</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer>Standalone HTML • без внешних библиотек • настройки хранятся локально в браузере</footer>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+function toggleSection(btn){ btn.parentElement.classList.toggle('open'); }
+function openAll(){ $$('.section').forEach(s=>s.classList.add('open')); }
+function closeAll(){ $$('.section').forEach(s=>s.classList.remove('open')); }
+
+function checkedValues(selector){
+  return $$(selector + ' input[type=checkbox]:checked').map(x=>x.value);
+}
+function boolLine(id, yesText){ return $('#'+id)?.checked ? yesText : null; }
+
+function taskGroups(){
+  return $$('.taskGroup').map(group => {
+    const items = [...group.querySelectorAll('input[type=checkbox]:checked')].map(x=>x.value);
+    return {name:group.dataset.group, items};
+  }).filter(g=>g.items.length);
+}
+
+function generatePrompt(){
+  const focus = checkedValues('#focuses');
+  const outSections = checkedValues('#outputSections');
+  const groups = taskGroups();
+  const qualityRules = [
+    boolLine('randomAnswers','Randomise correct-answer positions; never let answers follow a visible sequence.'),
+    boolLine('plausibleDistractors','Use plausible distractors based on realistic misunderstandings.'),
+    boolLine('noPattern','Avoid repeated answer patterns such as A-A-A-B-A or always-first correct answers.'),
+    boolLine('noLengthClues','Do not make the correct answer identifiable by length or grammatical form.'),
+    boolLine('textDependent','Every comprehension task must require actual reading of this chapter.'),
+    boolLine('evidenceFirst','Where interpretation is required, use Claim → Evidence → Explanation whenever appropriate.'),
+    boolLine('noGrammarMatching','Do not make matching tasks solvable through grammatical form or position alone.'),
+    boolLine('mixedTrueFalse','Keep True/False/Not Stated sequences unpredictable.')
+  ].filter(Boolean);
+  const imageRules = [
+    boolLine('imagePrimary','Treat attached photos/screenshots of the chapter as the PRIMARY SOURCE.'),
+    boolLine('noInvent','Never invent unreadable, hidden or missing text.'),
+    boolLine('visualEvidence','Use visual clues and illustrations as evidence when pedagogically useful.'),
+    boolLine('crossPage','Connect information across multiple attached pages where needed.'),
+    boolLine('ignoreMargins','Ignore page numbers, headers and irrelevant print artifacts unless meaningful.')
+  ].filter(Boolean);
+
+  const workbookReq = [
+    boolLine('readyToUse','Everything must be fully written and ready to use.'),
+    boolLine('noPlaceholders','Do not leave placeholders such as "add a task here".'),
+    boolLine('studentFacing','Write tasks exactly as the learner should see them.'),
+    boolLine('pagePurpose','Each page must have a distinct pedagogical purpose.')
+  ].filter(Boolean);
+
+  const designRules = [
+    boolLine('clearHierarchy','Use clear visual hierarchy.'),
+    boolLine('printFriendly','Keep the layout printable-friendly.'),
+    boolLine('noClutter','Avoid visual clutter.'),
+    boolLine('studentSpace','Leave realistic writing space for student answers.')
+  ].filter(Boolean);
+
+  const selectedTasksText = groups.length
+    ? groups.map(g => `### ${g.name}\n${g.items.map(i=>'[SELECTED] '+i).join('\n')}`).join('\n\n')
+    : 'No specific task types were selected. Choose a balanced set based on the chapter and learner profile.';
+
+  const prompt = `ROLE
+
+You are an expert foreign-language / language-literacy methodologist, CEFR-aware reading-task designer, literature-based lesson designer, literacy specialist and creator of learner-facing printable workbooks.
+
+You specialise in turning ONE specific chapter from a real book into a coherent reading journey.
+
+Your task is NOT to generate a random collection of comprehension questions.
+
+Create a complete methodological sequence:
+BEFORE READING → DURING READING → AFTER READING → LANGUAGE WORK → RESPONSE / TRANSFER
+
+Use the learner profile, selected task types and design requirements below. The attached chapter images are the source of truth.
+
+============================================================
+SOURCE MATERIAL
+============================================================
+
+I will attach photos / screenshots / scanned pages of ONE book chapter in the same chat.
+
+Rules:
+${imageRules.map(x=>'- '+x).join('\n')}
+- If any text is unclear: ${$('#unclearText').value}.
+- Do not invent events, dialogue, character details, vocabulary, quotations or plot information not supported by the supplied pages.
+- Do not use information from later chapters unless I attach it.
+- Do not reconstruct missing lines from memory or internet knowledge.
+- If the chapter contains illustrations, treat them as part of the reading source where appropriate.
+
+============================================================
+LEARNER PROFILE
+============================================================
+
+Target language: ${$('#targetLanguage').value === 'other — use custom field below' ? ($('#customTargetLanguage').value || 'custom language not specified') : $('#targetLanguage').value}
+Age: ${$('#age').value || 'not specified — infer only from other settings if possible'}
+CEFR / proficiency level: ${$('#cefr').value}
+Class format: ${$('#classFormat').value}
+Age/tone profile: ${$('#tone').value}
+Book type: ${$('#bookType').value}
+Book title: ${$('#bookTitle').value || 'not specified'}
+Chapter: ${$('#chapterTitle').value || 'not specified'}
+Chapter length: ${$('#chapterLength').value}
+Reading mode: ${$('#readingMode').value}
+
+============================================================
+WORKBOOK FORMAT
+============================================================
+
+Number of pages: ${$('#pages').value}
+Tasks per page: ${$('#tasksPerPage').value}
+Student instruction language: ${$('#instructionLang').value === 'custom — use field below' ? ($('#customInstructionLanguage').value || 'custom instruction language not specified') : $('#instructionLang').value}
+Support / translation language: ${$('#supportLanguage').value === 'custom — use field below' ? ($('#customSupportLanguage').value || 'custom support language not specified') : $('#supportLanguage').value}
+Teacher / methodological commentary language: ${$('#teacherLanguage').value === 'custom — use field below' ? ($('#customTeacherLanguage').value || 'custom teacher commentary language not specified') : $('#teacherLanguage').value}
+Translation support mode: ${$('#translation').value}
+Scaffolding level: ${$('#scaffolding').value}
+Difficulty: ${$('#difficulty').value}
+Original text policy: ${$('#includeText').value}
+Answer key: ${$('#answerKey').value}
+Output type: ${$('#outputType').value}
+
+Additional requirements:
+${workbookReq.map(x=>'- '+x).join('\n')}
+
+============================================================
+LANGUAGE POLICY
+============================================================
+
+- The TARGET LANGUAGE is the language being learned and the language of the book/chapter unless the source shows otherwise.
+- STUDENT INSTRUCTION LANGUAGE controls how task instructions are written.
+- SUPPORT / TRANSLATION LANGUAGE is used only for translation, glosses, scaffolding or contrastive support where selected.
+- TEACHER / METHODOLOGICAL COMMENTARY LANGUAGE controls chapter analysis, methodological map, teacher notes and answer-key explanations.
+- Do not default to English or Russian unless those languages are explicitly selected.
+- If "same as target language" is selected, write learner instructions entirely in the target language.
+- If a bilingual instruction mode is selected, keep the target-language instruction primary and the support-language version concise.
+- Examples, vocabulary items, model sentences and learner production must remain in the target language unless the task explicitly trains translation.
+- Preserve the linguistic norms, orthography, punctuation and register of the selected target language.
+- Adapt task types to the linguistic system of the selected language. Do not force English-specific grammar categories onto another language.
+- For non-Latin scripts, preserve the original script and add transliteration only if pedagogically appropriate for the selected level.
+- For languages with grammatical gender, cases, aspect, honorifics, classifiers, articles or other language-specific systems, design tasks around features that actually occur in the chapter rather than importing English-language methodology mechanically.
+
+============================================================
+MAIN PEDAGOGICAL FOCUS
+============================================================
+
+${focus.length ? focus.map(x=>'- '+x).join('\n') : '- balanced reading development'}
+
+============================================================
+SELECTED TASK TYPES
+============================================================
+
+${selectedTasksText}
+
+IMPORTANT:
+- Selected tasks are priorities, not a command to use every item mechanically.
+- Use a selected task only where it genuinely fits this particular chapter.
+- If several selected tasks test the same skill in the same way, choose the strongest options and avoid repetition.
+- If nothing is selected in a stage, choose suitable tasks yourself.
+- Never create a task that depends on information not present in the supplied chapter.
+
+============================================================
+METHODOLOGICAL LOGIC
+============================================================
+
+Cognitive progression:
+${$('#cognitive').value}
+
+Vocabulary progression:
+${$('#vocabLogic').value}
+
+Writing support:
+${$('#writingSupport').value}
+
+Speaking support:
+${$('#speakingSupport').value}
+
+General methodological principles:
+- The learner should not face the hardest task first.
+- Build from supported recognition toward independent use.
+- Do not over-test literal detail at the expense of comprehension.
+- Separate gist reading from detailed reading.
+- Use evidence-based interpretation.
+- Use retrieval, not only recognition.
+- Use translation as scaffolding, not as a substitute for reading.
+- Do not reveal major plot information in pre-reading tasks.
+- If the chapter is long, split it at natural narrative points: change of scene, new event, decision, conflict, surprise or cliffhanger.
+- Do not interrupt the story so frequently that reading loses momentum.
+- Do not turn a literature lesson into an unrelated grammar worksheet.
+- Grammar can be included only if it naturally appears in the chapter and is useful at this CEFR level.
+- Vocabulary selection must prioritise usefulness, frequency, relevance to understanding and reusability.
+- Do not teach every unknown word.
+
+============================================================
+ANTI-GUESSING & DISTRACTOR RULES
+============================================================
+
+Distractor difficulty: ${$('#distractorLevel').value}/5
+
+${qualityRules.map(x=>'- '+x).join('\n')}
+
+Wrong answers should come from realistic misunderstandings, such as:
+- a detail from another part of the chapter;
+- the correct character with the wrong action;
+- the correct action with the wrong character;
+- a partly true statement;
+- confusion between cause and result;
+- an inference unsupported by evidence;
+- a plausible event that did not actually happen.
+
+Never use obviously absurd distractors simply to fill answer options.
+
+TEXT-DEPENDENCE TEST:
+Before finalising each comprehension task, ask:
+"Could the learner answer this correctly without reading the chapter?"
+If yes, redesign the task.
+
+============================================================
+SCAFFOLDING BY LEVEL
+============================================================
+
+Use CEFR-appropriate scaffolding.
+
+For Pre-A1 / A1:
+- visual support;
+- very short instructions;
+- recognition before recall;
+- word banks;
+- sentence frames;
+- minimal open writing.
+
+For A2:
+- short evidence-based questions;
+- controlled recall;
+- word banks that gradually disappear;
+- supported retelling;
+- guided speaking.
+
+For B1:
+- more inference;
+- fewer prompts;
+- explanation and evidence;
+- structured writing;
+- transfer to a new context.
+
+For B2+:
+- ambiguity;
+- interpretation;
+- perspective;
+- reliability;
+- theme;
+- author choices;
+- evidence-based discussion.
+
+Adapt to age independently from CEFR.
+Low language level must not automatically produce childish content for older learners.
+
+============================================================
+TRANSLATION SCAFFOLDING
+============================================================
+
+Translation mode: ${$('#translation').value}
+
+If translation is used, prefer:
+context / picture → meaning in the target language → matching → partial translation into the selected support language → reconstruction → learner translation → model comparison only if useful.
+
+Do not immediately give a full translation into the support language if the learner is supposed to work toward understanding.
+
+============================================================
+PAGE-BY-PAGE WORKBOOK LOGIC
+============================================================
+
+Every page must have:
+1. Reading stage
+2. Clear learning objective
+3. One main cognitive action
+4. One to ${$('#tasksPerPage').value} well-connected tasks
+5. Appropriate support
+6. A clear learner output
+
+Suggested sequence for a ${$('#pages').value}-page workbook:
+- opening: orientation / prediction / essential vocabulary
+- early pages: first reading purpose + gist
+- middle pages: detailed reading + evidence + vocabulary in context
+- later pages: inference / character / story structure
+- final pages: retrieval / speaking / guided writing / final chapter challenge / next-chapter hook
+
+Adjust this sequence intelligently to the actual chapter.
+Do not force a fixed structure if the chapter requires another progression.
+
+============================================================
+FINAL CHALLENGE
+============================================================
+
+The final activity should combine several skills where appropriate.
+
+Possible models:
+- reconstruct the chapter from clues;
+- correct a false retelling;
+- solve a mini-mystery using evidence;
+- rank important events and justify the choice;
+- retell using restricted keywords;
+- create a character decision map;
+- predict the next chapter using 3 pieces of evidence.
+
+The final challenge must feel like the culmination of the chapter, not another basic worksheet question.
+
+============================================================
+VISUAL / DESIGN BRIEF
+============================================================
+
+Audience design: ${$('#designAge').value}
+Design style: ${$('#designStyle').value}
+Density: ${$('#density').value}
+Page format: ${$('#pageFormat').value}
+Illustration policy: ${$('#illustrations').value}
+Colour mode: ${$('#colorMode').value}
+
+${designRules.map(x=>'- '+x).join('\n')}
+
+Design should support learning:
+- one clear visual focus per page;
+- consistent task numbering;
+- readable hierarchy;
+- no decorative elements that compete with reading;
+- clear answer spaces;
+- tables / trackers / timelines only when methodologically useful.
+
+============================================================
+SPECIAL REQUIREMENTS
+============================================================
+
+${$('#special').value || 'No additional special requirements.'}
+
+DO NOT USE:
+${$('#forbidden').value || 'No additional exclusions.'}
+
+============================================================
+REQUIRED OUTPUT
+============================================================
+
+Return these sections:
+${outSections.length ? outSections.map((x,i)=>`${i+1}. ${x}`).join('\n') : '1. Complete Student Workbook'}
+
+When included, use the following standards:
+
+CHAPTER ANALYSIS
+Briefly identify:
+- main events;
+- characters;
+- setting;
+- central problem or development;
+- useful vocabulary;
+- possible grammar / language focus;
+- points where inference is possible;
+- natural reading stop points;
+- any part of the source that is unclear.
+
+NATURAL READING STOP POINTS
+Divide the chapter only where pedagogically and narratively justified.
+For each stop, explain what the learner should do there: predict, check, notice, infer, etc.
+
+METHODOLOGICAL MAP
+For each workbook page specify:
+- page number;
+- reading stage;
+- objective;
+- task type;
+- why the task belongs here;
+- scaffolding;
+- expected learner output.
+
+COMPLETE STUDENT WORKBOOK
+Write every task exactly as the learner should see it.
+Include all:
+- page titles;
+- instructions;
+- answer options;
+- word banks;
+- sentence starters;
+- tables;
+- speaking frames;
+- writing support;
+- short text extracts only when permitted by the source policy.
+
+Do not write notes such as "add an exercise here".
+Everything must be complete.
+
+TEACHER KEY
+Give:
+- correct answers;
+- acceptable alternatives;
+- brief rationale where useful;
+- evidence-based answers for inference questions;
+- criteria for subjective speaking / writing tasks.
+
+DESIGN BRIEF
+Describe the visual composition of each page only if this section was selected.
+
+DIFFERENTIATION NOTES
+Give easier and harder adaptations only if selected.
+
+OPTIONAL HOMEWORK
+Keep homework connected to the chapter, short and purposeful.
+
+============================================================
+QUALITY CONTROL — DO THIS SILENTLY BEFORE FINALISING
+============================================================
+
+Check:
+- Does every task relate directly to this chapter?
+- Can any answer be guessed without reading?
+- Are MCQ answer positions varied?
+- Are distractors plausible?
+- Are there recognition AND retrieval tasks?
+- Does difficulty rise gradually?
+- Is there support before open speaking/writing?
+- Are vocabulary tasks contextual?
+- Are inference questions based on evidence?
+- Are different cognitive processes used?
+- Does each page have a distinct purpose?
+- Is there unnecessary repetition?
+- Is workload realistic for age and CEFR?
+- Is the workbook a coherent reading journey?
+- Have you avoided inventing unseen text?
+- Have you respected the selected design and language settings?
+- Are learner instructions written in the selected instruction language?
+- Are teacher-facing notes written in the selected teacher-commentary language?
+- Is translation used only in the selected support language?
+- Have you avoided English-specific assumptions when the target language is not English?
+
+Fix any weakness BEFORE you present the final result.
+
+============================================================
+START NOW
+============================================================
+
+Analyse ONLY the attached chapter images and create the complete workbook according to all settings above.
+`;
+
+  $('#output').textContent = prompt;
+  $('#charCount').textContent = prompt.length.toLocaleString('ru-RU');
+  saveState();
+}
+
+function copyPrompt(){
+  const text = $('#output').textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    $('#copyStatus').textContent='Скопировано ✓';
+    setTimeout(()=>$('#copyStatus').textContent='Промпт обновляется автоматически',1800);
+  });
+}
+
+function downloadPrompt(){
+  const blob = new Blob([$('#output').textContent],{type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url;a.download='book-chapter-workbook-prompt.txt';a.click();
+  URL.revokeObjectURL(url);
+}
+
+function saveState(){
+  const state={};
+  $$('input,select,textarea').forEach(el=>{
+    if(!el.id && el.type!=='checkbox') return;
+    const key=el.id || ('check:'+el.value);
+    if(el.type==='checkbox') state[key]=el.checked;
+    else state[key]=el.value;
+  });
+  localStorage.setItem('bookWorkbookConstructorState',JSON.stringify(state));
+}
+
+function loadState(){
+  const raw=localStorage.getItem('bookWorkbookConstructorState');
+  if(!raw) return;
+  try{
+    const state=JSON.parse(raw);
+    $$('input,select,textarea').forEach(el=>{
+      const key=el.id || ('check:'+el.value);
+      if(!(key in state)) return;
+      if(el.type==='checkbox') el.checked=state[key];
+      else el.value=state[key];
+    });
+  }catch(e){}
+}
+
+function resetAll(){
+  if(!confirm('Сбросить все настройки конструктора?')) return;
+  localStorage.removeItem('bookWorkbookConstructorState');
+  location.reload();
+}
+
+function setChecks(groupName, values){
+  const group=$$('.taskGroup').find(g=>g.dataset.group===groupName);
+  if(!group) return;
+  [...group.querySelectorAll('input[type=checkbox]')].forEach(cb=>cb.checked=values.includes(cb.value));
+}
+
+function clearTaskChecks(){
+  $$('.taskGroup input[type=checkbox]').forEach(cb=>cb.checked=false);
+}
+
+function applyPreset(name){
+  clearTaskChecks();
+  if(name==='balanced'){
+    setChecks('Before Reading',['Predict from the chapter title','Preview only essential vocabulary']);
+    setChecks('During Reading — Gist & Structure',['Choose the best summary','Stop-and-predict at a natural cliffhanger','Check and revise earlier predictions']);
+    setChecks('During Reading — Detail & Evidence',['Multiple choice with plausible distractors','Evidence hunt','Order events']);
+    setChecks('Inference & Reading Between the Lines',['How does the character probably feel? Give evidence.','Which clue supports the idea?']);
+    setChecks('Vocabulary — Discovery',['Guess meaning from context','Collocations']);
+    setChecks('Vocabulary — Retrieval & Use',['Complete from context','Recall without a word bank']);
+    setChecks('Post-reading Comprehension & Response',['Retell using keywords','What changed from beginning to end?']);
+    setChecks('Speaking',['Predict and justify']);
+    setChecks('Next-Chapter Hook',['Prediction + three pieces of evidence']);
+  }
+  if(name==='young'){
+    $('#cefr').value='A1'; $('#scaffolding').value='high'; $('#designAge').value='children 9–11';
+    setChecks('Before Reading',['Predict from illustrations / visual clues','Match key words to pictures or definitions']);
+    setChecks('During Reading — Gist & Structure',['Who / where / what quick orientation','One-sentence checkpoint']);
+    setChecks('During Reading — Detail & Evidence',['Match character and action','Order events','Who said it?']);
+    setChecks('Vocabulary — Discovery',['Match word and meaning','Emotion vocabulary']);
+    setChecks('Vocabulary — Retrieval & Use',['Complete missing letters','Complete from translation']);
+    setChecks('Post-reading Comprehension & Response',['Retell using a timeline']);
+    setChecks('Speaking',['Character interview']);
+  }
+  if(name==='vocab'){
+    setChecks('Before Reading',['Preview only essential vocabulary','Sort chapter words into semantic groups']);
+    setChecks('During Reading — Gist & Structure',['Choose the best summary']);
+    setChecks('Vocabulary — Discovery',['Guess meaning from context','Choose the correct contextual meaning','Collocations','Verb + noun combinations','Adjective + noun combinations','Categorise words','Vocabulary detective']);
+    setChecks('Vocabulary — Retrieval & Use',['Cover and recall','Complete from definition','Complete from context','Recall without a word bank','Correct the vocabulary mistake','Produce a phrase with the word','Complete a new sentence']);
+    setChecks('Post-reading Comprehension & Response',['Complete the chapter summary']);
+  }
+  if(name==='literature'){
+    $('#cefr').value='B1';
+    setChecks('Before Reading',['Predict the central problem','Anticipation guide: agree / disagree']);
+    setChecks('During Reading — Gist & Structure',['Stop-and-predict at a natural cliffhanger','Beginning–middle–end structure']);
+    setChecks('During Reading — Detail & Evidence',['Evidence hunt','Emotion tracker']);
+    setChecks('Inference & Reading Between the Lines',['How does the character probably feel? Give evidence.','Why did the character do this?','Relationship clues','Mood / atmosphere from textual clues','Predict consequences from evidence']);
+    setChecks('Story Structure',['Character–goal–obstacle–decision','Cause-and-effect chain']);
+    setChecks('Character Work',['Character traits + evidence','Defend or criticise a decision using evidence','What changed in the character?']);
+    setChecks('Critical Thinking',['Find evidence for two interpretations','Which event mattered most?','Could the problem have been avoided?']);
+    setChecks('Next-Chapter Hook',['Prediction + three pieces of evidence']);
+  }
+  if(name==='speaking'){
+    setChecks('Before Reading',['Predict from the chapter title']);
+    setChecks('During Reading — Gist & Structure',['Check and revise earlier predictions']);
+    setChecks('During Reading — Detail & Evidence',['Short-answer questions','Evidence hunt']);
+    setChecks('Inference & Reading Between the Lines',['Why did the character do this?','Choose the best explanation and justify it']);
+    setChecks('Speaking',['Answer and explain','What would you do?','Character interview','Rank decisions','Defend a character','Predict and justify','Debate a character\'s decision']);
+    setChecks('Post-reading Comprehension & Response',['Retell using keywords']);
+  }
+  generatePrompt();
+}
+
+$$('input,select,textarea').forEach(el=>{
+  el.addEventListener('input',generatePrompt);
+  el.addEventListener('change',generatePrompt);
+});
+
+loadState();
+generatePrompt();
+</script>
+</body>
+</html>
